@@ -8,45 +8,16 @@ function Square(props) {
 
 class Board extends React.Component {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
-      xIsNext: true };
-
-  }
-
-  handleClick(i) {
-    const squares = this.state.squares.slice();
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext });
-
-  }
-
   renderSquare(i) {
     return /*#__PURE__*/(
       React.createElement(Square, {
-        value: this.state.squares[i],
-        onClick: () => this.handleClick(i) }));
+        value: this.props.squares[i],
+        onClick: () => this.props.onClick(i) }));
 
 
   }
 
   render() {
-    const winner = calculateWinner(this.state.squares);
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else {
-      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-    }
-
     return /*#__PURE__*/(
       React.createElement("div", null, /*#__PURE__*/
       React.createElement("div", { className: "status" }, status), /*#__PURE__*/
@@ -71,15 +42,81 @@ class Board extends React.Component {
 
 
 class Game extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      history: [{
+        squares: Array(9).fill(null) }],
+
+      stepNumber: 0,
+      xIsNext: true };
+
+  }
+
+  handleClick(i) {
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    const current = history[history.length - 1];
+    const squares = current.squares.slice();
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    this.setState({
+      history: history.concat([{
+        squares: squares }]),
+
+      stepNumber: history.length,
+      xIsNext: !this.state.xIsNext });
+
+  }
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: step % 2 === 0 });
+
+  }
+
+
+
   render() {
+
+    const history = this.state.history;
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares);
+
+    const moves = history.map((step, move) => {
+      const desc = move ?
+      'Go to move #' + move :
+      'Go to game start';
+      return /*#__PURE__*/(
+        React.createElement("li", { key: move }, /*#__PURE__*/
+        React.createElement("button", { onClick: () => this.jumpTo(move) }, desc)));
+
+
+    });
+
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+
+
     return /*#__PURE__*/(
       React.createElement("div", { className: "game" }, /*#__PURE__*/
       React.createElement("div", { className: "game-board" }, /*#__PURE__*/
-      React.createElement(Board, null)), /*#__PURE__*/
+      React.createElement(Board, {
+        squares: current.squares,
+        onClick: i => this.handleClick(i) })), /*#__PURE__*/
+
 
       React.createElement("div", { className: "game-info" }, /*#__PURE__*/
-      React.createElement("div", null), /*#__PURE__*/
-      React.createElement("ol", null))));
+      React.createElement("div", null, status), /*#__PURE__*/
+      React.createElement("ol", null, moves))));
 
 
 
